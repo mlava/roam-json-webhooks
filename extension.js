@@ -53,7 +53,7 @@ const config = {
             id: "jsonWH-refresh",
             name: "Refresh Commands",
             description: "Click to refresh the command palette with updated labels",
-            action: { type: "button", onClick: (e) => { e.stopPropagation(); window.jsonWH_refreshCommands(); } }
+            action: { type: "button", onClick: (e) => { e.stopPropagation(); window.jsonWH_refreshCommands(); }, content: "Refresh" }
         }
     ]
 };
