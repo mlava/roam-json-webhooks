@@ -49,8 +49,16 @@ const config = {
             description: "Custom label to replace 'JSON to Webhook #2' in the command palette",
             action: { type: "input", placeholder: "JSON to Webhook #2" },
         },
+        {
+            id: "jsonWH-refresh",
+            name: "Refresh Commands",
+            description: "Click to refresh the command palette with updated labels",
+            action: { type: "button", onClick: (e) => { e.stopPropagation(); window.jsonWH_refreshCommands(); } }
+        }
     ]
 };
+
+let currentLabels = {1: "JSON to Webhook #1", 2: "JSON to Webhook #2"};
 
 export default {
     onload: ({ extensionAPI }) => {
@@ -58,11 +66,11 @@ export default {
 
         const updateCommands = () => {
             // Remove existing commands
-            window.roamAlphaAPI.ui.commandPalette.removeCommand({
-                label: getCustomLabel(1, extensionAPI)
+            currentLabels[1] && window.roamAlphaAPI.ui.commandPalette.removeCommand({
+                label: currentLabels[1]
             });
-            window.roamAlphaAPI.ui.commandPalette.removeCommand({
-                label: getCustomLabel(2, extensionAPI)
+            currentLabels[2] && window.roamAlphaAPI.ui.commandPalette.removeCommand({
+                label: currentLabels[2]
             });
 
             // Add commands with potentially new labels
@@ -72,6 +80,7 @@ export default {
 
         const addWebhookCommand = (which) => {
             const label = getCustomLabel(which, extensionAPI);
+            currentLabels[which] = label;
             window.roamAlphaAPI.ui.commandPalette.addCommand({
                 label: label,
                 callback: () => {
@@ -86,12 +95,10 @@ export default {
         };
 
         // Initial setup of commands
-        addWebhookCommand(1);
-        addWebhookCommand(2);
+        updateCommands();
 
-        // Listen for changes in the settings
-        extensionAPI.settings.onChange('jsonWH-label', updateCommands);
-        extensionAPI.settings.onChange('jsonWH-label2', updateCommands);
+        // Make refreshCommands available globally
+        window.jsonWH_refreshCommands = updateCommands;
 
         async function jsonWH(uid, which) {
             var WebhookURL, WebhookDelimiter, tagConfirmation, WebhookURL2, WebhookDelimiter2, tagConfirmation2;
@@ -297,15 +304,13 @@ export default {
         }
     },
     onunload: () => {
-        const removeWebhookCommand = (which) => {
-            const label = getCustomLabel(which, window.roamAlphaAPI);
-            window.roamAlphaAPI.ui.commandPalette.removeCommand({
-                label: label
-            });
-        };
-
-        removeWebhookCommand(1);
-        removeWebhookCommand(2);
+        window.roamAlphaAPI.ui.commandPalette.removeCommand({
+            label: currentLabels[1]
+        });
+        window.roamAlphaAPI.ui.commandPalette.removeCommand({
+            label: currentLabels[2]
+        });
+        delete window.jsonWH_refreshCommands;
     }
 }
 
