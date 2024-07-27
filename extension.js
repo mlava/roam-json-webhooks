@@ -56,14 +56,22 @@ export default {
     onload: ({ extensionAPI }) => {
         extensionAPI.settings.panel.create(config);
 
-        const getCustomLabel = (which) => {
-            const defaultLabel = `JSON to Webhook #${which}`;
-            const customLabel = extensionAPI.settings.get(`jsonWH-label${which === 1 ? '' : '2'}`);
-            return customLabel || defaultLabel;
+        const updateCommands = () => {
+            // Remove existing commands
+            window.roamAlphaAPI.ui.commandPalette.removeCommand({
+                label: getCustomLabel(1, extensionAPI)
+            });
+            window.roamAlphaAPI.ui.commandPalette.removeCommand({
+                label: getCustomLabel(2, extensionAPI)
+            });
+
+            // Add commands with potentially new labels
+            addWebhookCommand(1);
+            addWebhookCommand(2);
         };
 
         const addWebhookCommand = (which) => {
-            const label = getCustomLabel(which);
+            const label = getCustomLabel(which, extensionAPI);
             window.roamAlphaAPI.ui.commandPalette.addCommand({
                 label: label,
                 callback: () => {
@@ -77,8 +85,13 @@ export default {
             });
         };
 
+        // Initial setup of commands
         addWebhookCommand(1);
         addWebhookCommand(2);
+
+        // Listen for changes in the settings
+        extensionAPI.settings.onChange('jsonWH-label', updateCommands);
+        extensionAPI.settings.onChange('jsonWH-label2', updateCommands);
 
         async function jsonWH(uid, which) {
             var WebhookURL, WebhookDelimiter, tagConfirmation, WebhookURL2, WebhookDelimiter2, tagConfirmation2;
@@ -285,7 +298,7 @@ export default {
     },
     onunload: () => {
         const removeWebhookCommand = (which) => {
-            const label = getCustomLabel(which);
+            const label = getCustomLabel(which, window.roamAlphaAPI);
             window.roamAlphaAPI.ui.commandPalette.removeCommand({
                 label: label
             });
@@ -300,8 +313,8 @@ function sendConfigAlert() {
     alert("Please set your webhook address via the Roam Depot tab.");
 }
 
-function getCustomLabel(which) {
+function getCustomLabel(which, extensionAPI) {
     const defaultLabel = `JSON to Webhook #${which}`;
-    const customLabel = window.roamAlphaAPI.settings.get(`jsonWH-label${which === 1 ? '' : '2'}`);
+    const customLabel = extensionAPI.settings.get(`jsonWH-label${which === 1 ? '' : '2'}`);
     return customLabel || defaultLabel;
 }
