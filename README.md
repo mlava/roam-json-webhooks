@@ -1,6 +1,7 @@
 This extension allows you to export data from Roam Research to a webhook. This can allow connection with services such as Zapier, IFTTT, Integromat/Make and Pipedream.
 
 **New:**
+- optionally add custom labels for each webhook
 - optionally apply a string or tag to the parent block on successfully sent to webhook (e.g. #sent)
 - support Konnectzit in addition to Zapier, IFTTT, Make/Integromat and Pipedream
 - allow a second webhook definition to send to a second source

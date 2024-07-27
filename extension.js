@@ -20,6 +20,12 @@ const config = {
             action: { type: "input", placeholder: "e.g. #sent (leave blank to ignore)" },
         },
         {
+            id: "jsonWH-label",
+            name: "Custom Label for Webhook #1",
+            description: "Custom label to replace 'JSON to Webhook #1' in the command palette",
+            action: { type: "input", placeholder: "JSON to Webhook #1" },
+        },
+        {
             id: "jsonWH-webhook2",
             name: "Second Webhook Address (optional)",
             description: "Place webhook address here",
@@ -37,37 +43,62 @@ const config = {
             description: "(Optional) tag or string to show on confirmation of successful post to webhook",
             action: { type: "input", placeholder: "e.g. #sent (leave blank to ignore)" },
         },
+        {
+            id: "jsonWH-label2",
+            name: "Custom Label for Webhook #2",
+            description: "Custom label to replace 'JSON to Webhook #2' in the command palette",
+            action: { type: "input", placeholder: "JSON to Webhook #2" },
+        },
+        {
+            id: "jsonWH-refresh",
+            name: "Refresh Commands",
+            description: "Click to refresh the command palette with updated labels",
+            action: { type: "button", onClick: (e) => { e.stopPropagation(); window.jsonWH_refreshCommands(); }, content: "Refresh" }
+        }
     ]
 };
+
+let currentLabels = {1: "JSON to Webhook #1", 2: "JSON to Webhook #2"};
 
 export default {
     onload: ({ extensionAPI }) => {
         extensionAPI.settings.panel.create(config);
 
-        window.roamAlphaAPI.ui.commandPalette.addCommand({
-            label: "JSON to Webhook #1",
-            callback: () => {
-                const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-                if (uid == undefined) {
-                    alert("Please make sure to focus a block before trying to send data to a webhook");
-                    return;
+        const updateCommands = () => {
+            // Remove existing commands
+            currentLabels[1] && window.roamAlphaAPI.ui.commandPalette.removeCommand({
+                label: currentLabels[1]
+            });
+            currentLabels[2] && window.roamAlphaAPI.ui.commandPalette.removeCommand({
+                label: currentLabels[2]
+            });
+
+            // Add commands with potentially new labels
+            addWebhookCommand(1);
+            addWebhookCommand(2);
+        };
+
+        const addWebhookCommand = (which) => {
+            const label = getCustomLabel(which, extensionAPI);
+            currentLabels[which] = label;
+            window.roamAlphaAPI.ui.commandPalette.addCommand({
+                label: label,
+                callback: () => {
+                    const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+                    if (uid == undefined) {
+                        alert("Please make sure to focus a block before trying to send data to a webhook");
+                        return;
+                    }
+                    jsonWH(uid, which);
                 }
-                var which = 1;
-                jsonWH(uid, which);
-            }
-        });
-        window.roamAlphaAPI.ui.commandPalette.addCommand({
-            label: "JSON to Webhook #2",
-            callback: () => {
-                const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-                if (uid == undefined) {
-                    alert("Please make sure to focus a block before trying to send data to a webhook");
-                    return;
-                }
-                var which = 2;
-                jsonWH(uid, which);
-            }
-        });
+            });
+        };
+
+        // Initial setup of commands
+        updateCommands();
+
+        // Make refreshCommands available globally
+        window.jsonWH_refreshCommands = updateCommands;
 
         async function jsonWH(uid, which) {
             var WebhookURL, WebhookDelimiter, tagConfirmation, WebhookURL2, WebhookDelimiter2, tagConfirmation2;
@@ -274,14 +305,21 @@ export default {
     },
     onunload: () => {
         window.roamAlphaAPI.ui.commandPalette.removeCommand({
-            label: 'JSON to Webhook #1'
+            label: currentLabels[1]
         });
         window.roamAlphaAPI.ui.commandPalette.removeCommand({
-            label: 'JSON to Webhook #2'
+            label: currentLabels[2]
         });
+        delete window.jsonWH_refreshCommands;
     }
 }
 
 function sendConfigAlert() {
     alert("Please set your webhook address via the Roam Depot tab.");
+}
+
+function getCustomLabel(which, extensionAPI) {
+    const defaultLabel = `JSON to Webhook #${which}`;
+    const customLabel = extensionAPI.settings.get(`jsonWH-label${which === 1 ? '' : '2'}`);
+    return customLabel || defaultLabel;
 }
